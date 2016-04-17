@@ -1,0 +1,169 @@
+\documentclass[12pt]{elsarticle}
+\usepackage[final]{psfrag,epsfig}
+\DeclareGraphicsExtensions{.eps}
+
+\special{papersize=8.5in,11in}
+
+%% Change margins ---------------------------------------------------------
+\topmargin -0.5in \oddsidemargin 0.0in \textwidth 6.75in
+\textheight 8.5in  \headheight 0.25in \headsep 0.25in \footskip
+0.75in \hoffset 0in \voffset 0.00in \marginparpush 0in
+\marginparwidth 0in \marginparsep 0in
+\newcommand{\comment}[1]{}
+
+% Line spacing -----------------------------------------------------------
+\newlength{\defbaselineskip}
+\setlength{\defbaselineskip}{\baselineskip}
+\newcommand{\setlinespacing}[1]%
+           {\setlength{\baselineskip}{#1 \defbaselineskip}}
+\newcommand{\doublespacing}{\setlength{\baselineskip}%
+                           {2.0 \defbaselineskip}}
+\newcommand{\singlespacing}{\setlength{\baselineskip}{\defbaselineskip}}
+
+\usepackage[cmex10]{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{color}
+
+
+\include{newcmd}
+
+\begin{document}
+
+
+\setlinespacing{1.2}
+
+%\begin{center}
+%\textbf{Report}
+%\end{center}
+
+
+
+This document describes an approach to solve a regression problem in case of noise-signal dependent.
+
+%\textbf{Summary of Problem:}
+%Gaussian linear models are often insufficient in practical applications, where noise can be heavy-tailed.
+%In this problem, we consider a linear model of the form $y_i = a x_i + b + e_i$. The $(e_i)$ are
+%independent noise from a distribution that depends on $x_i$ as well as on global parameters; however,
+%the noise distribution has conditional mean zero given $x_i$. The goal is to derive a good estimator for
+%the parameters $a$ and $b$ based on a sample of observed $(x_i; y_i)$ pairs.
+
+
+%In summary, the linear model was given as
+%\begin{equation}
+%\label{eq:lin1}
+%y_i=ax_i+b +e_i,
+%\end{equation}
+%where E$\{e_i|x_i\}$=0. Estimate $a$ and $b$ based on observed samples $(x,y)$.
+
+%\bigskip
+%\bigskip
+%\textbf{Solution}
+
+Let us assume the following model for data
+\begin{equation}
+\label{eq:lin2}
+y_i= a x_i + b + x_i^{\gamma} u+v, 
+\end{equation}
+where $u \sim \N(0, \sigma_u^2)$, $v \sim \N(0, \sigma_v^2)$. In this way, $e_i=x_i^{\gamma} u+v$ and by changing $\gamma,\sigma_u^2,\sigma_v^2$, various types of noise can be modeled. For simplicity, let's set $\gamma=1$ for the given datasets. Therefore, from now on we assume $e_i=x_i u+v$ and the unknown parameters to be estimated are $a,b,\sigma_u^2,\sigma_v^2$.
+
+Also, conditional mean and variance are
+\begin{gather}
+\label{eq:var1}
+\E\{e_i|x_i\}=0, \\
+\Var\{e_i|x_i\} =\sigma_i^2= x_i^{2} \sigma_u^2+\sigma_v^2.
+\end{gather}
+
+
+We can easily see that
+\begin{align}
+\E\{y_i| x_i \}= a x_i+b \\
+\Var\{ y_i | x_i\}= \sigma_i^2
+\end{align}
+
+\begin{equation}
+\label{eq:yipdf}
+p(y_i|x_i)= \frac{1}{\sqrt{2\pi \sigma_i^2}} \exp\left(  - \frac{(y_i- ax_i-b)^2}{2\sigma_i^2} \right).
+\end{equation}
+
+Since samples are assumed independent, we can write
+\begin{equation}
+\label{eq:ypdf}
+p(\y|\x)= \prod_{i=1}^{N} p(y_i|x_i)
+\end{equation}
+Taking the logarithm from the above gives
+\begin{equation}
+\label{eq:logp}
+\log p(\y|\x)= \sum \limits_{i=1}^{N} \log  p(y_i|x_i)=-\frac{N}{2} \log 2\pi - \frac{1}{2} \sum \limits_{i=1}^N  \log \sigma_i^2  - \frac{1}{2} \sum \limits_{i=1}^N \frac{(y_i-ax_i-b)^2}{\sigma_i^2}
+\end{equation}
+
+Now for maximum likelihood estimation of the unknown parameters, we maximize $p(\y|\x)$ or equivalently minimize the following cost function
+\begin{equation}
+\label{eq:mle}
+J(a,b,\sigma_u^2,\sigma_v^2)= \frac{1}{2} \sum \limits_{i=1}^N  \log \sigma_i^2 + \frac{1}{2} \sum \limits_{i=1}^N \frac{(y_i-ax_i-b)^2}{\sigma_i^2}
+\end{equation}
+
+
+The derivatives of the the cost function respect to parameters are
+\begin{gather}
+\label{eq:ja}
+\frac{\partial  J}{\partial a}= \sum \limits_{i=1}^N \frac{-x_i (y_i-ax_i-b) }{\sigma_i^2},\\
+\frac{\partial  J}{\partial b}= \sum \limits_{i=1}^N \frac{- (y_i-ax_i-b) }{\sigma_i^2}, \\
+\frac{\partial  J}{\partial \sigma_u^2}= \frac{1}{2} \sum \limits_{i=1}^N \frac{x_i^2}{\sigma_i^2}
+-\frac{1}{2} \sum \limits_{i=1}^N \frac{x_i^2(y_i-ax_i-b)^2}{(\sigma_i^2)^2},\\
+\frac{\partial  J}{\partial \sigma_v^2}= \frac{1}{2} \sum \limits_{i=1}^N \frac{1}{\sigma_i^2}
+-\frac{1}{2} \sum \limits_{i=1}^N \frac{(y_i-ax_i-b)^2}{(\sigma_i^2)^2}
+\end{gather}
+
+We can perform a gradient checking by computing the numerical gradient and analytic gradient to make sure that the above equations are correct. The gradient checking coded is included.
+
+Now, we can estimate parameters using the gradient descent as
+\begin{gather}
+a^{(k)}=a^{(k-1)} - \alpha \frac{\partial J}{\partial a}, \\
+b^{(k)}=b^{(k-1)} - \alpha \frac{\partial J}{\partial b}, \\
+\sigma_u^{2^{(k)}}=\sigma_u^{2^{(k-1)}} - \alpha \frac{\partial J}{\partial \sigma_u^2}, \\
+\sigma_v^{2^{(k)}}=\sigma_v^{2^{(k-1)}} - \alpha \frac{\partial J}{\partial \sigma_v^2},
+\end{gather}
+where $\alpha$ is the learning rate.
+
+To assess the quality of estimated parameters, we can compute the mean and variance of estimated parameters from the maximum likelihood criterion. If we set Eq.~\eqref{eq:ja} to zero we have 
+\begin{equation}
+\hat{a}= \frac{\sum \limits_{i=1}^{N}\frac{x_i (y_i-b)}{\sigma_i^2} }{\sum
+\limits_{i=1}^N  \frac{x_i^2}{\sigma_i^2}}
+\end{equation}
+It can be seen that
+\begin{gather}
+\E\{\hat{a} | x_i,\sigma_u^2,\sigma_v^2 \}= a \\
+\Var\{\hat{a} | x_i,\sigma_u^2,\sigma_v^2 \}= \frac{1}{\sum \limits_{i=1}^N \frac{x_i^2}{\sigma_i^2}}
+\end{gather}
+
+
+Similarly for $b$ we have 
+\begin{equation}
+\hat{b}= \frac{\sum \limits_{i=1}^{N}\frac{(y_i-a x_i)}{\sigma_i^2} }{\sum
+\limits_{i=1}^N  \frac{1}{\sigma_i^2}}
+\end{equation}
+\begin{gather}
+\E\{\hat{b}|x_i,\sigma_u^2,\sigma_v^2 \}= b \\
+\Var\{\hat{b} |x_i,\sigma_u^2,\sigma_v^2 \}= \frac{1}{\sum \limits_{i=1}^N \frac{1}{\sigma_i^2}}
+\end{gather}
+This shows that the estimators are unbiased with some variance that depends on the number of samples, noise variance and also signal values.
+With increasing the number of samples, the variance of estimates goes to zero.
+
+The scatter plot and linear model for data1.csv file is shown in Fig.~\ref{fig:xyplot}. The estimated parameters for this data are
+$a=0.98, b=0.05, \sigma_u^2=3.6, \sigma_v^2=1.1 $. Also, based on the estimated values, variance of $\hat{a}$ and $\hat{b}$ are 0.044 and 0.064, respectively.
+
+
+\begin{figure}[h!]
+\centerline{\epsfig{figure={figs/xyplot.eps},width=\linewidth}}
+\caption{{Scatter of data and the fitted linear model.}}
+\label{fig:xyplot}
+\end{figure}
+
+
+
+%\section*{References}
+%\bibliographystyle{model2-names}
+%\bibliography{ref/references}
+
+\end{document}
